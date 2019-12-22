@@ -1,0 +1,11 @@
+// web app's Firebase configuration
+module.exports = {
+  apiKey: "YOUR API KEY",
+  authDomain: "{PROJECT NAME }.firebaseapp.com",
+  databaseURL: "https://{YOUR DATABASE}.firebaseio.com",
+  projectId: "{PROJECT ID}",
+  storageBucket: "{PROJECT URL}.appspot.com",
+  messagingSenderId: "{SENDER ID}",
+  appId: "{YOUR APP ID}",
+  measurementId: "{MEASUREMENT ID}"
+};

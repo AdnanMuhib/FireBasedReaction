@@ -1,9 +1,12 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const express = require('express');
+const firebase = require('firebase');
+const app = require('express')();
+const firebaseConfig = require('./config');
 
 admin.initializeApp();
-const app = express();
+
+firebase.initializeApp(firebaseConfig);
 
 // Get a list of screams
 app.get('/screams', (req, res) => {
@@ -50,5 +53,23 @@ app.post('/scream', (req, res) => {
     });
 });
 
+// signup route
+app.post('/signup', (req, res)=> {
+    const newUser = {
+        email: req.body.email,
+        password: req.body.password,
+        confirmPassword: req.body.confirmPassword,
+        handle: req.body.handle,
+    }
+    // TODO: validate data
+    firebase.auth().createUserWithEmailAndPassword(newUser.email, newUser.password)
+    .then(data => {
+        return res.status(201).json({'message':`user ${data.user.uid} signed up successfully`});
+    })
+    .catch(err => {
+        console.log(err);
+        return res.status(500).json({error: err.code});
+    })
+})
 // https://baseurl.com/api/
 exports.api = functions.https.onRequest(app);

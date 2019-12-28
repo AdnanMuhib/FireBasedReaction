@@ -28,10 +28,42 @@ app.get("/screams", (req, res) => {
     .catch(err => console.error(err));
 });
 
+// Firebase Authentication Middleware
+const FireBaseAuth = (req, res, next) => {
+  let idToken;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    idToken = req.headers.authorization.split("Bearer ")[1];
+  } else {
+    console.error("No token found");
+    return res.status(403).json({ error: "Unauthorized" });
+  }
+  admin
+    .auth()
+    .verifyIdToken(idToken)
+    .then(decodedToken => {
+      req.user = decodedToken;
+      return db
+        .collection("users")
+        .where("userId", "==", req.user.uid)
+        .limit(1)
+        .get();
+    })
+    .then(data => {
+      req.user.handle = data.docs[0].data().handle;
+      return next();
+    })
+    .catch(err => {
+      console.error("Error while verifying token");
+      return res.status(403).json(err);
+    });
+};
 // post a new scream to database
-app.post("/scream", (req, res) => {
+app.post("/scream", FireBaseAuth, (req, res) => {
   const newScream = {
-    userHandle: req.body.userHandle,
+    userHandle: req.user.handle,
     body: req.body.body,
     createdAt: new Date().toISOString()
   };

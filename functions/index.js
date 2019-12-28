@@ -49,6 +49,16 @@ app.post("/scream", (req, res) => {
     });
 });
 
+const isEmpty = string => {
+  if (string.trim() === "") return true;
+  return false;
+};
+const isEmail = email => {
+  const regEx =
+    "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
+  if (email.match(regEx)) return true;
+  return false;
+};
 // signup route
 app.post("/signup", (req, res) => {
   const newUser = {
@@ -58,6 +68,27 @@ app.post("/signup", (req, res) => {
     handle: req.body.handle
   };
   // validate data
+  let errors = {};
+
+  if (isEmpty(newUser.email)) {
+    errors.email = "Must not be be Empty";
+  } else if (!isEmail(newUser.email)) {
+    errors.email = "Must be a valid email address";
+  }
+
+  if (isEmpty(newUser.password)) {
+    errors.password = "Must not be empty";
+  }
+
+  if (newUser.password !== newUser.confirmPassword) {
+    errors.confirmPassword = "Passwords must match";
+  }
+
+  if (isEmpty(newUser.handle)) errors.handle = "Must not be empty";
+
+  if (Object.keys(errors).length > 0) {
+    return res.status(400).json(errors);
+  }
   let token, userId;
   db.doc(`/users/${newUser.handle}`)
     .get()
@@ -98,6 +129,46 @@ app.post("/signup", (req, res) => {
       } else {
         return res.status(500).json({ error: err.code });
       }
+    });
+});
+
+// Login Route
+app.post("/login", (req, res) => {
+  const user = {
+    email: req.body.email,
+    password: req.body.password
+  };
+
+  // Validate Data
+  let errors = {};
+  if (isEmpty(user.email)) {
+    errors.email = "Must not be empty";
+  } else if (!isEmail(user.email)) {
+    errors.email = "Should be Valid Email";
+  }
+  if (isEmpty(user.password)) {
+    errors.password = "Must not be empty";
+  }
+  if (Object.keys(errors).length > 0) {
+    return res.status(400).json(errors);
+  }
+  // authenticate
+  firebase
+    .auth()
+    .signInWithEmailAndPassword(user.email, user.password)
+    .then(data => {
+      return data.user.getIdToken();
+    })
+    .then(token => {
+      return res.json({ token });
+    })
+    .catch(err => {
+      console.error(err);
+      if (err.code === "auth/wrong-password")
+        return res
+          .status(403)
+          .json({ general: "Wrong Credentials Please Try Again" });
+      return res.status(500).json({ error: err.code });
     });
 });
 // https://baseurl.com/api/
